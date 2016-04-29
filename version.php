@@ -22,7 +22,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$plugin->version = 20160428;
+$plugin->version = 2016042800;
 $plugin->requires = 2011120100;
 $plugin->cron = 60*60*4; // 4 hours.
 
