@@ -223,7 +223,7 @@ class mod_subpage_renderer extends plugin_renderer_base {
             // Only show the section if visible and not stealthed or to users with permission.
             if ((($section->visible && !$section->stealth) ||
                     has_capability('moodle/course:viewhiddensections', $coursecontext)) &&
-                    ($editing || !$autohide)) {
+                    ($editing || !$autohide) || ($section->sequence && isloggedin() && !is_guest(\context_course::instance($COURSE->id)))) {
                 if ($section->stealth) {
                     $content .= html_writer::start_tag('div', array('class' => 'stealthed'));
                 }
@@ -286,7 +286,7 @@ class mod_subpage_renderer extends plugin_renderer_base {
                         has_capability('moodle/course:viewhiddensections', $context));
 
                 // Don't show contents of section when not visible to user.
-                if ($sectioninfo->uservisible) {
+                if ($sectioninfo->uservisible || $section->sequence) {
                     $content .= $this->render_section($subpage, $modinfo, $section,
                             $editing, $moveitem, $mods);
                 }
