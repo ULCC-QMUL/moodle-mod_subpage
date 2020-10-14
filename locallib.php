@@ -245,45 +245,22 @@ class mod_subpage  {
         global $DB, $CFG;
         require_once($CFG->dirroot .'/course/lib.php'); // For course_create_sections_if_missing().
 
-        // Extra condition if the oucontent module (which has similar but simpler,
-        // behaviour) is installed, so they don't tread on each others' toes.
-        $oucontentjoin = '';
-        $oucontentwhere = '';
-        if (file_exists($CFG->dirroot . '/mod/oucontent')) {
-            $oucontentjoin = "LEFT JOIN {oucontent} o ON o.course = cs.course AND o.coursesectionid = cs2.id";
-            $oucontentwhere = "AND o.id IS NULL";
-        }
-
-        // Pick a section number. This query finds the first section,
-        // on the course that is at least the minimum number, and does not have,
-        // a used section in the following number, and returns that following,
-        // section number. (This means it can fill up gaps if sections are deleted.)
+        // Get the highest section number.
         $sql = "
-            SELECT cs.section+1 AS num
-              FROM {course_sections} cs
-         LEFT JOIN {course_sections} cs2 ON cs2.course = cs.course AND cs2.section = cs.section+1
-         LEFT JOIN {subpage_sections} ss2 ON ss2.sectionid = cs2.id
-                   $oucontentjoin
-             WHERE cs.course = ?
-               AND cs.section >= ?
-               AND ss2.id IS NULL
-                   $oucontentwhere
-          ORDER BY cs.section";
-        if (is_null($minsection)) {
-            $minsection = self::get_min_section_number($courseid);
-        }
-        $result = $DB->get_records_sql($sql, array($courseid, $minsection), 0, 1);
-        if (count($result) == 0) {
-            // If no existing sections, use the min number.
-            $sectionnum = $minsection;
-        } else {
-            $sectionnum = reset($result)->num;
-        }
+            select
+            max(section) as ms
+            from {course_sections}
+            where course = $courseid
+        ";
+        $result = $DB->get_record_sql($sql);
+        $sectionnum = (int) $result->ms + 1;
+        course_create_sections_if_missing($courseid, $sectionnum);
 
-        // Create a section entry with this section number then get it.
-        if ($add) {
-            course_create_sections_if_missing($courseid, $sectionnum);
-        }
+        // Put section into stealth mode.
+        $section = $DB->get_record('course_sections', array('course' => $courseid, 'section' => $sectionnum));
+        $section->visible = 0;
+        $DB->update_record('course_sections', $section);
+
         return $sectionnum;
     }
 
